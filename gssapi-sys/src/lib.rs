@@ -3,6 +3,10 @@
 #![allow(non_camel_case_types,
          non_upper_case_globals,
          non_snake_case)]
+
+mod defines;
+pub use defines::*;
+
 pub enum gss_name_struct { }
 pub type gss_name_t = *mut gss_name_struct;
 pub enum gss_cred_id_struct { }
@@ -60,19 +64,6 @@ impl ::std::default::Default for gss_channel_bindings_struct {
 pub type gss_channel_bindings_t = *mut gss_channel_bindings_struct;
 pub type gss_qop_t = OM_uint32;
 
-pub const GSS_C_DELEG_FLAG: OM_uint32 = 1;
-pub const GSS_C_MUTUAL_FLAG: OM_uint32 = 2;
-pub const GSS_C_REPLAY_FLAG: OM_uint32 = 4;
-pub const GSS_C_SEQUENCE_FLAG: OM_uint32 = 8;
-pub const GSS_C_CONF_FLAG: OM_uint32 = 6;
-pub const GSS_C_INTEG_FLAG: OM_uint32 = 2;
-pub const GSS_C_ANON_FLAG: OM_uint32 = 4;
-pub const GSS_C_PROT_READY_FLAG: OM_uint32 = 8;
-pub const GSS_C_TRANS_FLAG: OM_uint32 = 6;
-pub const GSS_C_DELEG_POLICY_FLAG: OM_uint32 = 8;
-pub const GSS_C_NO_UI_FLAG: OM_uint32 = 0x80000000;
-
-pub const GSS_S_COMPLETE: OM_uint32 = 0;
 pub type gss_cred_usage_t = ::std::os::raw::c_int;
 pub type gss_const_buffer_t = *const gss_buffer_desc;
 pub type gss_const_channel_bindings_t = *const gss_channel_bindings_struct;
