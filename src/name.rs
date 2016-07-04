@@ -10,22 +10,22 @@ pub struct Name {
 
 impl Name {
     pub fn new(name: &mut Buffer, name_type: oid::OID) -> Result<Self> {
-        let mut min_stat = 0;
+        let mut minor_status = 0;
         let mut gss_name = ptr::null_mut();
 
-        let maj_stat = unsafe {
-            gssapi_sys::gss_import_name(&mut min_stat,
+        let major_status = unsafe {
+            gssapi_sys::gss_import_name(&mut minor_status,
                                         name.get_handle(),
                                         name_type,
                                         &mut gss_name)
         };
 
-        if maj_stat == gssapi_sys::GSS_S_COMPLETE {
+        if major_status == gssapi_sys::GSS_S_COMPLETE {
             Ok(Name {
                 name: gss_name,
             })
         } else {
-            Err(Error)
+            Err(Error::new(major_status, minor_status))
         }
     }
 

@@ -3,7 +3,19 @@ use std::fmt;
 use std::result;
 
 #[derive(Debug)]
-pub struct Error;
+pub struct Error {
+    major_status: u32,
+    minor_status: u32,
+}
+
+impl Error {
+    pub fn new(major_status: u32, minor_status: u32) -> Self {
+        Error {
+            major_status: major_status,
+            minor_status: minor_status,
+        }
+    }
+}
 
 impl error::Error for Error {
     fn description(&self) -> &str {

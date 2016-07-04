@@ -1,7 +1,7 @@
-/*
 extern crate gssapi_sys;
 extern crate gssapi;
 
+/*
 type ret_flags = *mut u32;
 
 fn client_establish_context(server_fd: isize,
