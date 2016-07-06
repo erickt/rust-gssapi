@@ -5,3 +5,6 @@ authors = ["Erick Tryzelaar <erick.tryzelaar@gmail.com>"]
 
 [dependencies]
 gssapi-sys = { version = "*", path = "gssapi-sys" }
+
+[dev-dependencies]
+resolve = "^0.1.2"

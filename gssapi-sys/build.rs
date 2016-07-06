@@ -16,5 +16,19 @@ fn main() {
                 println!("cargo:include={}", paths.to_str().unwrap());
             }
         }
+
+        for link_path in info.link_paths {
+            println!("cargo:rustc-link-search=native={}", link_path.to_str().unwrap());
+        }
+
+        let mode = if env::var_os("GSSAPI_STATIC").is_some() {
+            "static"
+        } else {
+            "dylib"
+        };
+
+        for lib in info.libs {
+            println!("cargo:rustc-link-lib={}={}", mode, lib);
+        }
     }
 }

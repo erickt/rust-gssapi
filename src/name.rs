@@ -4,12 +4,14 @@ use super::error::{Error, Result};
 use super::oid;
 use super::buffer::Buffer;
 
+#[derive(Debug)]
 pub struct Name {
     name: gssapi_sys::gss_name_t,
 }
 
 impl Name {
-    pub fn new(name: &mut Buffer, name_type: oid::OID) -> Result<Self> {
+    pub fn new<T: Into<Buffer>>(name: T, name_type: oid::OID) -> Result<Self> {
+        let mut name = name.into();
         let mut minor_status = 0;
         let mut gss_name = ptr::null_mut();
 

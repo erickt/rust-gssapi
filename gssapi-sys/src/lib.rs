@@ -4,6 +4,10 @@
          non_upper_case_globals,
          non_snake_case)]
 
+#[link(name = "Kerberos", kind = "framework")]
+#[cfg(target_os = "macos")]
+extern { }
+
 mod defines;
 pub use defines::*;
 

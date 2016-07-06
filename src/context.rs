@@ -6,17 +6,63 @@ use super::error::{Error, Result};
 use super::name::Name;
 use super::oid::OID;
 
+#[derive(Debug)]
+pub struct SecurityContext {
+    context_handle: gssapi_sys::gss_ctx_id_t,
+    mech_type: OID,
+    time_rec: u32,
+    flags: u32,
+}
+
+impl SecurityContext {
+    pub fn builder<T: Into<Name>>(target_name: T) -> SecurityContextBuilder {
+        SecurityContextBuilder::new(target_name)
+    }
+
+    pub fn mech_type(&self) -> &OID {
+        &self.mech_type
+    }
+
+    pub fn time_rec(&self) -> u32 {
+        self.time_rec
+    }
+
+    pub fn flags(&self) -> u32 {
+        self.flags
+    }
+}
+
+impl Drop for SecurityContext {
+    fn drop(&mut self) {
+        let mut minor_status = 0;
+        let major_status = unsafe {
+            gssapi_sys::gss_delete_sec_context(
+                &mut minor_status,
+                &mut self.context_handle,
+                ptr::null_mut())
+        };
+
+        if major_status != gssapi_sys::GSS_S_COMPLETE {
+            panic!("failed to drop context {} {}", major_status, minor_status)
+        }
+    }
+}
+
+
+#[derive(Debug)]
 pub struct SecurityContextBuilder {
-    builder: SecurityContextBuilderStep,
+    builder: SecurityContextInitializer,
 }
 
 impl SecurityContextBuilder {
-    pub fn new(target_name: Name) -> Self {
+    pub fn new<T: Into<Name>>(target_name: T) -> Self {
+        let target_name = target_name.into();
+
         SecurityContextBuilder {
-            builder: SecurityContextBuilderStep {
+            builder: SecurityContextInitializer {
                 target_name: target_name,
                 mech_type: ptr::null_mut(),
-                deleg_flags: 0,
+                flags: 0,
                 context_handle: ptr::null_mut(),
             },
         }
@@ -28,29 +74,32 @@ impl SecurityContextBuilder {
     }
 
     pub fn flags(mut self, flags: u32) -> Self {
-        self.builder.deleg_flags |= flags;
+        self.builder.flags |= flags;
         self
     }
 
-    pub fn step(self) -> Result<SecurityContextBuilderState> {
+    pub fn step(self) -> Result<SecurityContextInitializerStep> {
         self.builder.step(Buffer::new())
     }
 }
 
-pub enum SecurityContextBuilderState {
-    Continue(SecurityContextBuilderStep, Buffer),
+
+#[derive(Debug)]
+pub enum SecurityContextInitializerStep {
+    Continue(SecurityContextInitializer, Buffer),
     Done(SecurityContext),
 }
 
-pub struct SecurityContextBuilderStep {
+#[derive(Debug)]
+pub struct SecurityContextInitializer {
     target_name: Name,
     mech_type: OID,
-    deleg_flags: u32,
+    flags: u32,
     context_handle: gssapi_sys::gss_ctx_id_t,
 }
 
-impl SecurityContextBuilderStep {
-    pub fn step(mut self, mut input_token: Buffer) -> Result<SecurityContextBuilderState> {
+impl SecurityContextInitializer {
+    pub fn step(mut self, mut input_token: Buffer) -> Result<SecurityContextInitializerStep> {
         let mut minor_status = 0;
         let initiator_cred_handle = ptr::null_mut(); // no credentials
         let time_req = 0;
@@ -67,7 +116,7 @@ impl SecurityContextBuilderStep {
                 &mut self.context_handle,
                 self.target_name.get_handle(),
                 self.mech_type,
-                self.deleg_flags,
+                self.flags,
                 time_req,
                 input_chan_bindings,
                 input_token.get_handle(),
@@ -82,46 +131,17 @@ impl SecurityContextBuilderStep {
             panic!("cannot create context");
         }
 
-        match major_status {
-            gssapi_sys::GSS_S_COMPLETE => {
-                Ok(SecurityContextBuilderState::Done(SecurityContext {
-                    context_handle: self.context_handle,
-                    mech_type: actual_mech_type,
-                    time_rec: time_rec,
-                    flags: ret_flags,
-                }))
-            }
-            gssapi_sys::GSS_S_CONTINUE_NEEDED => {
-                Ok(SecurityContextBuilderState::Continue(self, output_token))
-            }
-            _ => {
-                Err(Error::new(major_status, minor_status))
-            }
-        }
-    }
-}
-
-pub struct SecurityContext {
-    context_handle: gssapi_sys::gss_ctx_id_t,
-    mech_type: OID,
-    time_rec: u32,
-    flags: u32,
-}
-
-impl SecurityContext { }
-
-impl Drop for SecurityContext {
-    fn drop(&mut self) {
-        let mut minor_status = 0;
-        let major_status = unsafe {
-            gssapi_sys::gss_delete_sec_context(
-                &mut minor_status,
-                &mut self.context_handle,
-                ptr::null_mut())
-        };
-
-        if major_status != gssapi_sys::GSS_S_COMPLETE {
-            panic!("failed to drop context {} {}", major_status, minor_status)
+        if major_status == gssapi_sys::GSS_S_COMPLETE {
+            Ok(SecurityContextInitializerStep::Done(SecurityContext {
+                context_handle: self.context_handle,
+                mech_type: actual_mech_type,
+                time_rec: time_rec,
+                flags: ret_flags,
+            }))
+        } else if major_status == gssapi_sys::GSS_S_CONTINUE_NEEDED {
+            Ok(SecurityContextInitializerStep::Continue(self, output_token))
+        } else {
+            Err(Error::new(major_status, minor_status))
         }
     }
 }
