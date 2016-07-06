@@ -2,6 +2,8 @@ extern crate gssapi_sys;
 extern crate gssapi;
 extern crate resolve;
 
+use gssapi::{Context, ContextInitializer, Name};
+
 /*
 type ret_flags = *mut u32;
 
@@ -35,11 +37,12 @@ fn call_server(host: &str,
 
 fn main() {
     let fqdn = resolve::hostname::get_hostname().unwrap();
-    let server_hostbased_name = gssapi::Name::new(
+
+    let server_hostbased_name = Name::new(
         format!("http@{}", fqdn),
         gssapi::oid::GSS_C_NT_HOSTBASED_SERVICE).unwrap();
 
-    let client_ctx_builder = gssapi::SecurityContext::builder(
+    let client_ctx_builder = Context::client_builder(
         server_hostbased_name);
 
     let mut initializer = client_ctx_builder.step().unwrap();
@@ -47,12 +50,13 @@ fn main() {
 
     loop {
         initializer = match initializer {
-            gssapi::context::SecurityContextInitializerStep::Continue(initializer, output) => {
+            ContextInitializer::Continue { initializer, output } => {
+                let _ = output;
                 let input = gssapi::Buffer::new();
                 initializer.step(input).unwrap()
             }
-            gssapi::context::SecurityContextInitializerStep::Done(ctx) => {
-                context = ctx;
+            ContextInitializer::Done { context: context_ }  => {
+                context = context_;
                 break;
             }
         };

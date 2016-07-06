@@ -7,6 +7,6 @@ pub mod error;
 pub mod oid;
 
 pub use buffer::Buffer;
-pub use context::SecurityContext;
+pub use context::{Context, ContextInitializer};
 pub use error::{Error, Result};
 pub use name::Name;

@@ -7,16 +7,16 @@ use super::name::Name;
 use super::oid::OID;
 
 #[derive(Debug)]
-pub struct SecurityContext {
+pub struct Context {
     context_handle: gssapi_sys::gss_ctx_id_t,
     mech_type: OID,
     time_rec: u32,
     flags: u32,
 }
 
-impl SecurityContext {
-    pub fn builder<T: Into<Name>>(target_name: T) -> SecurityContextBuilder {
-        SecurityContextBuilder::new(target_name)
+impl Context {
+    pub fn client_builder<T: Into<Name>>(target_name: T) -> ContextBuilder {
+        ContextBuilder::new(target_name)
     }
 
     pub fn mech_type(&self) -> &OID {
@@ -32,7 +32,7 @@ impl SecurityContext {
     }
 }
 
-impl Drop for SecurityContext {
+impl Drop for Context {
     fn drop(&mut self) {
         let mut minor_status = 0;
         let major_status = unsafe {
@@ -50,16 +50,16 @@ impl Drop for SecurityContext {
 
 
 #[derive(Debug)]
-pub struct SecurityContextBuilder {
-    builder: SecurityContextInitializer,
+pub struct ContextBuilder {
+    state: ContextInitializerState,
 }
 
-impl SecurityContextBuilder {
+impl ContextBuilder {
     pub fn new<T: Into<Name>>(target_name: T) -> Self {
         let target_name = target_name.into();
 
-        SecurityContextBuilder {
-            builder: SecurityContextInitializer {
+        ContextBuilder {
+            state: ContextInitializerState {
                 target_name: target_name,
                 mech_type: ptr::null_mut(),
                 flags: 0,
@@ -69,37 +69,41 @@ impl SecurityContextBuilder {
     }
 
     pub fn mech_type(mut self, mech_type: OID) -> Self {
-        self.builder.mech_type = mech_type;
+        self.state.mech_type = mech_type;
         self
     }
 
     pub fn flags(mut self, flags: u32) -> Self {
-        self.builder.flags |= flags;
+        self.state.flags |= flags;
         self
     }
 
-    pub fn step(self) -> Result<SecurityContextInitializerStep> {
-        self.builder.step(Buffer::new())
+    pub fn step(self) -> Result<ContextInitializer> {
+        self.state.step(Buffer::new())
     }
 }
 
-
 #[derive(Debug)]
-pub enum SecurityContextInitializerStep {
-    Continue(SecurityContextInitializer, Buffer),
-    Done(SecurityContext),
+pub enum ContextInitializer {
+    Continue {
+        initializer: ContextInitializerState,
+        output: Buffer,
+    },
+    Done {
+        context: Context,
+    },
 }
 
 #[derive(Debug)]
-pub struct SecurityContextInitializer {
+pub struct ContextInitializerState {
     target_name: Name,
     mech_type: OID,
     flags: u32,
     context_handle: gssapi_sys::gss_ctx_id_t,
 }
 
-impl SecurityContextInitializer {
-    pub fn step(mut self, mut input_token: Buffer) -> Result<SecurityContextInitializerStep> {
+impl ContextInitializerState {
+    pub fn step(mut self, mut input_token: Buffer) -> Result<ContextInitializer> {
         let mut minor_status = 0;
         let initiator_cred_handle = ptr::null_mut(); // no credentials
         let time_req = 0;
@@ -132,14 +136,19 @@ impl SecurityContextInitializer {
         }
 
         if major_status == gssapi_sys::GSS_S_COMPLETE {
-            Ok(SecurityContextInitializerStep::Done(SecurityContext {
-                context_handle: self.context_handle,
-                mech_type: actual_mech_type,
-                time_rec: time_rec,
-                flags: ret_flags,
-            }))
+            Ok(ContextInitializer::Done {
+                context: Context {
+                    context_handle: self.context_handle,
+                    mech_type: actual_mech_type,
+                    time_rec: time_rec,
+                    flags: ret_flags,
+                }
+            })
         } else if major_status == gssapi_sys::GSS_S_CONTINUE_NEEDED {
-            Ok(SecurityContextInitializerStep::Continue(self, output_token))
+            Ok(ContextInitializer::Continue {
+                initializer: self,
+                output: output_token,
+            })
         } else {
             Err(Error::new(major_status, minor_status))
         }
