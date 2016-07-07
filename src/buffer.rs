@@ -5,7 +5,6 @@ use std::ops;
 use std::os::raw::c_void;
 use std::ptr;
 use std::slice;
-use super::error::Result;
 
 #[derive(Debug)]
 pub struct Buffer {
@@ -34,15 +33,15 @@ impl Buffer {
         }
     }
 
-    pub fn into_bytes(self) -> Result<Vec<u8>> {
+    pub fn into_bytes(self) -> Vec<u8> {
         match self.kind {
             BufferKind::Rust { capacity } => {
                 unsafe {
-                    Ok(Vec::from_raw_parts(
+                    Vec::from_raw_parts(
                         self.buffer_desc.value as *mut u8,
                         self.buffer_desc.length,
                         capacity,
-                    ))
+                    )
                 }
             }
             /*
@@ -70,7 +69,43 @@ impl Buffer {
             }
             */
         }
+    }
 
+    pub fn as_bytes(&self) -> &[u8] {
+        match self.kind {
+            BufferKind::Rust { .. } => {
+                unsafe {
+                    slice::from_raw_parts(
+                        self.buffer_desc.value as *mut u8,
+                        self.buffer_desc.length,
+                    )
+                }
+            }
+            /*
+            BufferKind::GSSAPI => {
+                let vec = unsafe {
+                    slice::from_raw_parts(
+                        self.buffer_desc.value as *mut u8,
+                        self.buffer_desc.length
+                    ).to_owned()
+                };
+
+                let mut minor_status = 0;
+
+                let major_status = unsafe {
+                    gssapi_sys::gss_release_buffer(
+                        &mut minor_status,
+                        &mut self.buffer_desc)
+                };
+
+                if major_status == gssapi_sys::GSS_S_COMPLETE {
+                    Ok(vec)
+                } else {
+                    Err(Error::new(major_status, minor_status))
+                }
+            }
+            */
+        }
     }
 }
 

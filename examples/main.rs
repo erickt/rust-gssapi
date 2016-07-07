@@ -2,37 +2,65 @@ extern crate gssapi_sys;
 extern crate gssapi;
 extern crate resolve;
 
-use gssapi::{Context, ContextInitializer, Name};
+use gssapi::{
+    AcceptContext,
+    Context,
+    Credentials,
+    InitiateContext,
+    Name,
+    OID,
+};
 
 fn main() {
-    let fqdn = resolve::hostname::get_hostname().unwrap();
+    let fqdn = resolve::hostname::get_hostname().expect("failed to resolve hostname");
 
-    let server_hostbased_name = Name::new(
+    let server_name = Name::new(
         format!("http@{}", fqdn),
-        gssapi::oid::GSS_C_NT_HOSTBASED_SERVICE).unwrap();
+        OID::nt_hostbased_service(),
+    ).expect("failed to create server name");
 
-    let client_ctx_builder = Context::client_builder(
-        server_hostbased_name);
+    let server_credentials = Credentials::accept(server_name.clone())
+        .build().expect("failed to create credentials");
 
-    let mut initializer = client_ctx_builder.step();
-    let context;
+    let client_ctx_builder = Context::initiate(server_name);
+    let server_ctx_builder = Context::accept(server_credentials);
 
-    loop {
-        match initializer {
-            Ok(ContextInitializer::Continue { initializer: initializer_, output }) => {
-                let _ = output;
-                let input = gssapi::Buffer::new();
-                initializer = initializer_.step(input)
-            }
-            Ok(ContextInitializer::Done { context: context_ }) => {
-                context = context_;
-                break;
-            }
-            Err(err) => {
-                panic!("{}", err)
+    let (mut initializer, client_token) = client_ctx_builder.step().expect("client initial step failed");
+
+    let client_context;
+    let server_context;
+
+    match server_ctx_builder.step(client_token).expect("server initial step failed") {
+        AcceptContext::Done { context: server_context_, token } => {
+            server_context = server_context_;
+            client_context = initializer.final_step(token).expect("initializer final step failed");
+        }
+        AcceptContext::Continue { mut acceptor, token: mut server_token } => {
+            loop {
+                match initializer.step(server_token).expect("initializer step failed") {
+                    InitiateContext::Done { .. } => {
+                        panic!("client done but server is not?");
+                    }
+                    InitiateContext::Continue { initializer: initializer_, token: client_token } => {
+                        initializer = initializer_;
+
+                        match acceptor.step(client_token).expect("acceptor step failed") {
+                            AcceptContext::Done { context: server_context_, token } => {
+                                server_context = server_context_;
+                                client_context = initializer.final_step(token).expect("initializer final step failed");
+                                break;
+                            }
+                            AcceptContext::Continue { acceptor: acceptor_, token: server_token_ } => {
+                                acceptor = acceptor_;
+                                server_token = server_token_;
+                            }
+                        }
+                    }
+                }
             }
         }
-    }
+    };
 
-    println!("client: {:?}", context);
+    println!("client: {:?}", client_context);
+    println!("server: {:?}", server_context);
 }

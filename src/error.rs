@@ -1,21 +1,25 @@
-use buffer::Buffer;
 use gssapi_sys;
 use std::error;
 use std::fmt;
-use std::ptr;
 use std::result;
+use std::str;
+use super::buffer::Buffer;
+use super::oid::OID;
 
-#[derive(Debug)]
+pub type Result<T> = result::Result<T, Error>;
+
 pub struct Error {
     major_status: u32,
     minor_status: u32,
+    mech_type: OID,
 }
 
 impl Error {
-    pub fn new(major_status: u32, minor_status: u32) -> Self {
+    pub fn new(major_status: u32, minor_status: u32, mech_type: OID) -> Self {
         Error {
             major_status: major_status,
             minor_status: minor_status,
+            mech_type: mech_type,
         }
     }
 }
@@ -28,39 +32,88 @@ impl error::Error for Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut message_context = 0;
+        try!(write!(f, "GSS Error({}, {}): ", self.major_status, self.minor_status));
+        let mut first = true;
 
-        loop {
-            let mut minor_status = 0;
-            let status_value = 0;
-            let status_type = gssapi_sys::GSS_C_GSS_CODE;
-            let mech_type = ptr::null_mut();
-            let mut status_string = Buffer::new();
-
-            let major_status = unsafe {
-                gssapi_sys::gss_display_status(
-                    &mut minor_status,
-                    status_value,
-                    status_type,
-                    mech_type,
-                    &mut message_context,
-                    status_string.get_handle(),
-                )
-            };
-
-            assert_eq!(major_status, gssapi_sys::GSS_S_COMPLETE);
-
-            if let Err(err) = write!(f, "{:?}\n", self) {
-                return Err(err);
+        for status in DisplayStatus::new(self.major_status,
+                                         gssapi_sys::GSS_C_GSS_CODE,
+                                         &self.mech_type) {
+            if !first {
+                try!(write!(f, " -- "));
             }
+            first = false;
 
-            if message_context != 0 {
-                break;
+            try!(write!(f, "{}", str::from_utf8(status.as_bytes()).unwrap()));
+        }
+
+        for status in DisplayStatus::new(self.minor_status,
+                                         gssapi_sys::GSS_C_MECH_CODE,
+                                         &self.mech_type) {
+            if !first {
+                try!(write!(f, " -- "));
             }
+            first = false;
+
+            try!(write!(f, "{}", str::from_utf8(status.as_bytes()).unwrap()));
         }
 
         Ok(())
     }
 }
 
-pub type Result<T> = result::Result<T, Error>;
+impl fmt::Debug for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
+pub struct DisplayStatus<'a> {
+    code: u32,
+    status_type: i32,
+    mech_type: &'a OID,
+    message_context: u32,
+    done: bool
+}
+
+impl<'a> DisplayStatus<'a> {
+    fn new(code: u32, status_type: i32, mech_type: &'a OID) -> Self {
+        DisplayStatus {
+            code: code,
+            status_type: status_type,
+            mech_type: mech_type,
+            message_context: 0,
+            done: false,
+        }
+    }
+}
+
+impl<'a> Iterator for DisplayStatus<'a> {
+    type Item = Buffer;
+
+    fn next(&mut self) -> Option<Buffer> {
+        if self.done {
+            None
+        } else {
+            let mut minor_status = 0;
+            let mut status_string = Buffer::new();
+
+            let major_status = unsafe {
+                gssapi_sys::gss_display_status(
+                    &mut minor_status,
+                    self.code,
+                    self.status_type,
+                    self.mech_type.get_handle(),
+                    &mut self.message_context,
+                    status_string.get_handle(),
+                )
+            };
+
+            if major_status == gssapi_sys::GSS_S_COMPLETE {
+                self.done = self.message_context == 0;
+                Some(status_string)
+            } else {
+                panic!("failed to stringify error message");
+            }
+        }
+    }
+}

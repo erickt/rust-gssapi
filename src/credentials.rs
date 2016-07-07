@@ -1,9 +1,11 @@
 use error::{Error, Result};
 use gssapi_sys;
 use name::Name;
+use oid::OID;
 use oid_set::OIDSet;
 use std::ptr;
 
+#[derive(Debug)]
 pub struct Credentials {
     cred_handle: gssapi_sys::gss_cred_id_t,
     mechs: OIDSet,
@@ -11,7 +13,7 @@ pub struct Credentials {
 }
 
 impl Credentials {
-    pub fn builder<T: Into<Name>>(desired_name: T) -> CredentialsBuilder {
+    pub fn accept<T: Into<Name>>(desired_name: T) -> CredentialsBuilder {
         CredentialsBuilder::new(desired_name)
     }
 
@@ -21,6 +23,10 @@ impl Credentials {
 
     pub fn time_rec(&self) -> u32 {
         self.time_rec
+    }
+
+    pub unsafe fn get_handle(&self) -> gssapi_sys::gss_cred_id_t {
+        self.cred_handle
     }
 }
 
@@ -35,7 +41,7 @@ impl Drop for Credentials {
         };
 
         if major_status != gssapi_sys::GSS_S_COMPLETE {
-            panic!("{}", Error::new(major_status, minor_status))
+            panic!("{}", Error::new(major_status, minor_status, OID::empty()))
         }
     }
 }
@@ -88,7 +94,7 @@ impl CredentialsBuilder {
                 time_rec: time_rec,
             })
         } else {
-            Err(Error::new(major_status, minor_status))
+            Err(Error::new(major_status, minor_status, OID::empty()))
         }
     }
 }

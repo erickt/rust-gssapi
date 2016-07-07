@@ -1,7 +1,9 @@
 use gssapi_sys;
 use std::ptr;
 use super::error::{Error, Result};
+use super::oid::OID;
 
+#[derive(Debug)]
 pub struct OIDSet {
     oid_set: gssapi_sys::gss_OID_set,
 }
@@ -22,7 +24,7 @@ impl OIDSet {
                 oid_set: oid_set,
             })
         } else {
-            Err(Error::new(major_status, minor_status))
+            Err(Error::new(major_status, minor_status, OID::empty()))
         }
     }
 
@@ -42,7 +44,7 @@ impl Drop for OIDSet {
         };
 
         if major_status != gssapi_sys::GSS_S_COMPLETE {
-            let err = Error::new(major_status, minor_status);
+            let err = Error::new(major_status, minor_status, OID::empty());
             panic!("{}", err);
         }
     }
