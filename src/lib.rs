@@ -1,3 +1,6 @@
+#![cfg_attr(feature = "unstable-testing", feature(plugin))]
+#![cfg_attr(feature = "unstable-testing", plugin(clippy))]
+
 extern crate gssapi_sys;
 
 pub mod buffer;
