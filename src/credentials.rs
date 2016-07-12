@@ -4,6 +4,7 @@ use name::Name;
 use oid::OID;
 use oid_set::OIDSet;
 use std::ptr;
+use std::ffi::CString;
 
 #[derive(Debug)]
 pub struct Credentials {
@@ -33,20 +34,42 @@ impl Credentials {
         CredentialsBuilder::new(desired_name).impersonator(self)
     }
     
-    // TODO: wrap gssapi key-value set type
-    // TODO: 'write' method that stores cred to file
-    // gss_store_cred_into(
-    // OM_uint32 *,               /* minor_status */
-    // gss_cred_id_t,             /* input_cred_handle */
-    // gss_cred_usage_t,          /* input_usage */
-    // gss_OID,                   /* desired_mech */
-    // OM_uint32,                 /* overwrite_cred */
-    // OM_uint32,                 /* default_cred */
-    // gss_const_key_value_set_t, /* cred_store */
-    // gss_OID_set *,             /* elements_stored */
-    // gss_cred_usage_t *);       /* cred_usage_stored */
-
-    // pub fn store()
+    pub unsafe fn bytes(self) -> Result<Vec<u8>> {
+        let mut kvs = gssapi_sys::gss_key_value_set_struct{
+            count: 0,
+            elements: ptr::null_mut(),
+        };
+        
+        let mut minor_status = 0;
+        let major_status = unsafe {
+            // Example usage: https://github.com/krb5/krb5/blob/master/src/tests/gssapi/t_credstore.c#L77
+            gssapi_sys::gss_store_cred_into(
+                &mut minor_status, /* minor_status */
+                self.cred_handle, /* input_cred_handle */
+                0, /* input_usage */
+                ptr::null_mut(), /* desired_mech */
+                1, /* overwrite_cred */
+                0, /* default_cred */
+                &mut kvs as gssapi_sys::gss_const_key_value_set_t, /* cred_store */
+                ptr::null_mut(), /* elements_stored */
+                ptr::null_mut(), /* cred_usage_stored */
+            )
+        };
+        
+        // FIXME: How to deallocate what's now pointed to by 'elements' ?
+        // https://github.com/krb5/krb5/blob/master/src/tests/gssapi/t_credstore.c#L135
+        
+        if major_status == gssapi_sys::GSS_S_COMPLETE {
+            if kvs.count != 1 {
+                // FIXME: How to show some information in this case?
+                Err(Error::new(0, 0, OID::empty()))
+            } else {
+                unsafe { Ok(CString::from_raw((*kvs.elements).value as *mut i8).into_bytes()) }
+            }
+        } else {
+            Err(Error::new(major_status, minor_status, OID::empty()))
+        }
+    }
 }
 
 impl Drop for Credentials {
