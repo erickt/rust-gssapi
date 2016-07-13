@@ -39,35 +39,40 @@ impl Credentials {
     
     #[cfg(feature = "services4user")]
     pub unsafe fn bytes(self) -> Result<Vec<u8>> {
-        let mut kvs = gssapi_sys::gss_key_value_set_struct{
+        let mut minor_status = 0;
+        let input_usage = 0;
+        let desired_mech = ptr::null_mut();
+        let overwrite_cred = 1;
+        let default_cred = 0;
+        let mut cred_store = gssapi_sys::gss_key_value_set_struct {
             count: 0,
             elements: ptr::null_mut(),
         };
-        
-        let mut minor_status = 0;
+        let mut elements_stored = ptr::null_mut();
+        let mut cred_usage_stored = 0;
 
         // Example usage: https://github.com/krb5/krb5/blob/master/src/tests/gssapi/t_credstore.c#L77
         let major_status = gssapi_sys::gss_store_cred_into(
-            &mut minor_status, /* minor_status */
-            self.cred_handle, /* input_cred_handle */
-            0, /* input_usage */
-            ptr::null_mut(), /* desired_mech */
-            1, /* overwrite_cred */
-            0, /* default_cred */
-            &mut kvs as gssapi_sys::gss_const_key_value_set_t, /* cred_store */
-            ptr::null_mut(), /* elements_stored */
-            ptr::null_mut(), /* cred_usage_stored */
+            &mut minor_status,
+            self.cred_handle,
+            input_usage,
+            desired_mech,
+            overwrite_cred,
+            default_cred,
+            &mut cred_store,
+            &mut elements_stored,
+            &mut cred_usage_stored
         );
         
         // FIXME: How to deallocate what's now pointed to by 'elements' ?
         // https://github.com/krb5/krb5/blob/master/src/tests/gssapi/t_credstore.c#L135
         
         if major_status == gssapi_sys::GSS_S_COMPLETE {
-            if kvs.count != 1 {
+            if cred_store.count != 1 {
                 // FIXME: How to show some information in this case?
                 Err(Error::new(0, 0, OID::empty()))
             } else {
-                Ok(CString::from_raw((*kvs.elements).value as *mut i8).into_bytes())
+                Ok(CString::from_raw((*cred_store.elements).value as *mut i8).into_bytes())
             }
         } else {
             Err(Error::new(major_status, minor_status, OID::empty()))
