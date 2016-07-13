@@ -4,11 +4,9 @@ use name::Name;
 use oid::OID;
 use oid_set::OIDSet;
 use std::ptr;
-use std::slice;
-use libc;
 
 #[cfg(feature = "services4user")]
-use std::ffi::CStr;
+use std::ffi::CString;
 
 #[derive(Debug)]
 pub struct Credentials {
@@ -40,47 +38,44 @@ impl Credentials {
     }
     
     #[cfg(feature = "services4user")]
-    pub unsafe fn bytes(self) -> Result<Vec<u8>> {
-        let mut minor_status = 0;
+    pub fn store_into(self, cred_store: &Vec<(CString, CString)>) -> Result<bool> {
         let input_usage = 0;
         let desired_mech = ptr::null_mut();
         let overwrite_cred = 1;
         let default_cred = 0;
-        let mut cred_store = gssapi_sys::gss_key_value_set_struct {
-            count: 0,
-            elements: ptr::null_mut(),
-        };
-        let mut elements_stored = ptr::null_mut();
+        let mut elements_stored = try!(OIDSet::empty());
         let mut cred_usage_stored = 0;
         let mut minor_status = 0;
+        
+        let mut elements: Vec<(gssapi_sys::gss_key_value_element_desc)> = cred_store.into_iter()
+                                                                .map(|&(ref e1, ref e2)| gssapi_sys::gss_key_value_element_struct {
+                                                                    key: e1.as_ptr(),
+                                                                    value: e2.as_ptr(),
+                                                                })
+                                                                .collect();
+        
+        let mut gss_cred_store = gssapi_sys::gss_key_value_set_struct {
+            count: cred_store.len() as u32,
+            elements: elements.as_mut_ptr(),
+        };
 
-        // Example usage: https://github.com/krb5/krb5/blob/master/src/tests/gssapi/t_credstore.c#L77
-        let major_status = gssapi_sys::gss_store_cred_into(
-            &mut minor_status,
-            self.cred_handle,
-            input_usage,
-            desired_mech,
-            overwrite_cred,
-            default_cred,
-            &mut cred_store,
-            &mut elements_stored,
-            &mut cred_usage_stored
-        );
+        let major_status = unsafe {
+            // Example usage: https://github.com/krb5/krb5/blob/master/src/tests/gssapi/t_credstore.c#L779
+            gssapi_sys::gss_store_cred_into(
+                &mut minor_status,
+                self.cred_handle,
+                input_usage,
+                desired_mech,
+                overwrite_cred,
+                default_cred,
+                &mut gss_cred_store,
+                &mut elements_stored.get_handle(),
+                &mut cred_usage_stored
+            )
+        };
                 
         if major_status == gssapi_sys::GSS_S_COMPLETE {
-            // Get Rust to free the key-value store's elements when this function returns.
-            // Trying to follow https://github.com/krb5/krb5/blob/master/src/tests/gssapi/t_credstore.c#L135 .
-            libc::free(cred_store.elements as *mut libc::c_void);
-            if cred_store.count != 1 {
-                // FIXME: How to show some information in this case?
-                Err(Error::new(0, 0, OID::empty()))
-            } else {
-                // Wrap the key and value from the credential store without taking ownership.
-                // Not taking ownership follows https://github.com/krb5/krb5/blob/master/src/tests/gssapi/t_credstore.c#L135 .
-                // let key = CStr::from_ptr((*cred_store.elements).key);
-                let val = CStr::from_ptr((*cred_store.elements).value);
-                Ok(val.to_bytes_with_nul().to_vec())
-            }
+            Ok(true)
         } else {
             Err(Error::new(major_status, minor_status, OID::empty()))
         }
