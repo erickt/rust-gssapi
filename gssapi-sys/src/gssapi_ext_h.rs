@@ -168,65 +168,100 @@ extern "C" {
                                          arg10: *mut gss_OID_set,
                                          arg11: *mut OM_uint32,
                                          arg12: *mut OM_uint32) -> OM_uint32;
-    pub fn gss_display_name_ext(arg1: *mut OM_uint32, arg2: gss_name_t,
-                                arg3: gss_OID, arg4: gss_buffer_t)
+
+    // Naming extensions
+
+    pub fn gss_display_name_ext(minor_status: *mut OM_uint32,
+                                name: gss_name_t,
+                                display_as_name_type: gss_OID,
+                                display_name: gss_buffer_t)
      -> OM_uint32;
-    pub fn gss_inquire_name(arg1: *mut OM_uint32, arg2: gss_name_t,
-                            arg3: *mut ::std::os::raw::c_int,
-                            arg4: *mut gss_OID, arg5: *mut gss_buffer_set_t)
+    pub fn gss_inquire_name(minor_status: *mut OM_uint32,
+                            name: gss_name_t,
+                            name_is_MN: *mut ::std::os::raw::c_int,
+                            MN_mech: *mut gss_OID,
+                            attrs: *mut gss_buffer_set_t)
      -> OM_uint32;
-    pub fn gss_get_name_attribute(arg1: *mut OM_uint32, arg2: gss_name_t,
-                                  arg3: gss_buffer_t,
-                                  arg4: *mut ::std::os::raw::c_int,
-                                  arg5: *mut ::std::os::raw::c_int,
-                                  arg6: gss_buffer_t, arg7: gss_buffer_t,
-                                  arg8: *mut ::std::os::raw::c_int)
+    pub fn gss_get_name_attribute(minor_status: *mut OM_uint32,
+                                  name: gss_name_t,
+                                  attr: gss_buffer_t,
+                                  authenticated: *mut ::std::os::raw::c_int,
+                                  complete: *mut ::std::os::raw::c_int,
+                                  value: gss_buffer_t,
+                                  display_value: gss_buffer_t,
+                                  more: *mut ::std::os::raw::c_int)
      -> OM_uint32;
-    pub fn gss_set_name_attribute(arg1: *mut OM_uint32, arg2: gss_name_t,
-                                  arg3: ::std::os::raw::c_int,
-                                  arg4: gss_buffer_t, arg5: gss_buffer_t)
+    pub fn gss_set_name_attribute(minor_status: *mut OM_uint32,
+                                  name: gss_name_t,
+                                  complete: ::std::os::raw::c_int,
+                                  attr: gss_buffer_t,
+                                  value: gss_buffer_t)
      -> OM_uint32;
-    pub fn gss_delete_name_attribute(arg1: *mut OM_uint32, arg2: gss_name_t,
-                                     arg3: gss_buffer_t) -> OM_uint32;
-    pub fn gss_export_name_composite(arg1: *mut OM_uint32, arg2: gss_name_t,
-                                     arg3: gss_buffer_t) -> OM_uint32;
-    pub fn gss_map_name_to_any(arg1: *mut OM_uint32, arg2: gss_name_t,
-                               arg3: ::std::os::raw::c_int,
-                               arg4: gss_buffer_t, arg5: *mut gss_any_t)
+    pub fn gss_delete_name_attribute(minor_status: *mut OM_uint32,
+                                     name: gss_name_t,
+                                     attr: gss_buffer_t) -> OM_uint32;
+    pub fn gss_export_name_composite(minor_status: *mut OM_uint32,
+                                     name: gss_name_t,
+                                     exp_composite_name: gss_buffer_t) -> OM_uint32;
+    pub fn gss_map_name_to_any(minor_status: *mut OM_uint32,
+                               name: gss_name_t,
+                               authenticated: ::std::os::raw::c_int,
+                               type_id: gss_buffer_t,
+                               output: *mut gss_any_t)
      -> OM_uint32;
-    pub fn gss_release_any_name_mapping(arg1: *mut OM_uint32,
-                                        arg2: gss_name_t, arg3: gss_buffer_t,
-                                        arg4: *mut gss_any_t) -> OM_uint32;
-    pub fn gss_encapsulate_token(arg1: gss_const_buffer_t,
-                                 arg2: gss_const_OID, arg3: gss_buffer_t)
+    pub fn gss_release_any_name_mapping(minor_status: *mut OM_uint32,
+                                        name: gss_name_t,
+                                        type_id: gss_buffer_t,
+                                        input: *mut gss_any_t) -> OM_uint32;
+
+
+    // draft-josefsson-gss-capsulate
+
+    pub fn gss_encapsulate_token(input_token: gss_const_buffer_t,
+                                 token_oid: gss_const_OID,
+                                 output_token: gss_buffer_t)
      -> OM_uint32;
-    pub fn gss_decapsulate_token(arg1: gss_const_buffer_t,
-                                 arg2: gss_const_OID, arg3: gss_buffer_t)
+    pub fn gss_decapsulate_token(input_token: gss_const_buffer_t,
+                                 token_oid: gss_const_OID,
+                                 output_token: gss_buffer_t)
      -> OM_uint32;
-    pub fn gss_oid_equal(arg1: gss_const_OID, arg2: gss_const_OID)
+    pub fn gss_oid_equal(first_oid: gss_const_OID, second_oid: gss_const_OID)
      -> ::std::os::raw::c_int;
-    pub fn gss_acquire_cred_from(arg1: *mut OM_uint32, arg2: gss_name_t,
-                                 arg3: OM_uint32, arg4: gss_OID_set,
-                                 arg5: gss_cred_usage_t,
-                                 arg6: gss_const_key_value_set_t,
-                                 arg7: *mut gss_cred_id_t,
-                                 arg8: *mut gss_OID_set, arg9: *mut OM_uint32)
+    pub fn gss_acquire_cred_from(minor_status: *mut OM_uint32,
+                                 desired_name: gss_name_t,
+                                 time_req: OM_uint32,
+                                 desired_mechs: gss_OID_set,
+                                 cred_usage: gss_cred_usage_t,
+                                 cred_store: gss_const_key_value_set_t,
+                                 output_cred_handle: *mut gss_cred_id_t,
+                                 actual_mechs: *mut gss_OID_set,
+                                 time_rec: *mut OM_uint32)
      -> OM_uint32;
-    pub fn gss_add_cred_from(arg1: *mut OM_uint32, arg2: gss_cred_id_t,
-                             arg3: gss_name_t, arg4: gss_OID,
-                             arg5: gss_cred_usage_t, arg6: OM_uint32,
-                             arg7: OM_uint32, arg8: gss_const_key_value_set_t,
-                             arg9: *mut gss_cred_id_t,
-                             arg10: *mut gss_OID_set, arg11: *mut OM_uint32,
-                             arg12: *mut OM_uint32) -> OM_uint32;
-    pub fn gss_store_cred_into(arg1: *mut OM_uint32, arg2: gss_cred_id_t,
-                               arg3: gss_cred_usage_t, arg4: gss_OID,
-                               arg5: OM_uint32, arg6: OM_uint32,
-                               arg7: gss_const_key_value_set_t,
-                               arg8: *mut gss_OID_set,
-                               arg9: *mut gss_cred_usage_t) -> OM_uint32;
-    pub fn gss_export_cred(arg1: *mut OM_uint32, arg2: gss_cred_id_t,
-                           arg3: gss_buffer_t) -> OM_uint32;
-    pub fn gss_import_cred(arg1: *mut OM_uint32, arg2: gss_buffer_t,
-                           arg3: *mut gss_cred_id_t) -> OM_uint32;
+
+    // Credential store extensions
+
+    pub fn gss_add_cred_from(minor_status: *mut OM_uint32,
+                             input_cred_handle: gss_cred_id_t,
+                             input_usage: gss_cred_usage_t,
+                             desired_mech: gss_OID,
+                             overwrite_cred: OM_uint32,
+                             default_cred: OM_uint32,
+                             cred_store: gss_const_key_value_set_t,
+                             elements_stored: *mut gss_OID_set,
+                             cred_usage_stored: *mut gss_cred_usage_t) -> OM_uint32;
+    pub fn gss_store_cred_into(minor_status: *mut OM_uint32,
+                               input_cred_handle: gss_cred_id_t,
+                               input_usage: gss_cred_usage_t,
+                               desired_mech: gss_OID,
+                               overwrite_cred: OM_uint32,
+                               default_cred: OM_uint32,
+                               cred_store: gss_const_key_value_set_t,
+                               elements_stored: *mut gss_OID_set,
+                               cred_usage_stored: *mut gss_cred_usage_t) -> OM_uint32;
+    pub fn gss_export_cred(minor_status: *mut OM_uint32,
+                           cred_handle: gss_cred_id_t,
+                           token: gss_buffer_t) -> OM_uint32;
+    pub fn gss_import_cred(minor_status: *mut OM_uint32,
+                           token: gss_buffer_t,
+                           cred_handle: *mut gss_cred_id_t) -> OM_uint32;
 }

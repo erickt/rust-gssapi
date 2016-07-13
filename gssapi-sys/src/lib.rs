@@ -17,5 +17,5 @@ pub use gssapi_h::*;
 #[cfg(feature = "services4user")]
 mod gssapi_ext_h;
 
-#[cfg(feature = "gssapi_ext")]
+#[cfg(feature = "services4user")]
 pub use gssapi_ext_h::*;
