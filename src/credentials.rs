@@ -4,6 +4,8 @@ use name::Name;
 use oid::OID;
 use oid_set::OIDSet;
 use std::ptr;
+
+#[cfg(feature = "gssapi_ext")]
 use std::ffi::CString;
 
 #[derive(Debug)]
@@ -30,10 +32,12 @@ impl Credentials {
         self.cred_handle
     }
     
+    #[cfg(feature = "gssapi_ext")]
     pub fn impersonate<T: Into<Name>>(self, desired_name: T) -> CredentialsBuilder {
         CredentialsBuilder::new(desired_name).impersonator(self)
     }
     
+    #[cfg(feature = "gssapi_ext")]
     pub unsafe fn bytes(self) -> Result<Vec<u8>> {
         let mut kvs = gssapi_sys::gss_key_value_set_struct{
             count: 0,
@@ -41,20 +45,19 @@ impl Credentials {
         };
         
         let mut minor_status = 0;
-        let major_status = unsafe {
-            // Example usage: https://github.com/krb5/krb5/blob/master/src/tests/gssapi/t_credstore.c#L77
-            gssapi_sys::gss_store_cred_into(
-                &mut minor_status, /* minor_status */
-                self.cred_handle, /* input_cred_handle */
-                0, /* input_usage */
-                ptr::null_mut(), /* desired_mech */
-                1, /* overwrite_cred */
-                0, /* default_cred */
-                &mut kvs as gssapi_sys::gss_const_key_value_set_t, /* cred_store */
-                ptr::null_mut(), /* elements_stored */
-                ptr::null_mut(), /* cred_usage_stored */
-            )
-        };
+
+        // Example usage: https://github.com/krb5/krb5/blob/master/src/tests/gssapi/t_credstore.c#L77
+        let major_status = gssapi_sys::gss_store_cred_into(
+            &mut minor_status, /* minor_status */
+            self.cred_handle, /* input_cred_handle */
+            0, /* input_usage */
+            ptr::null_mut(), /* desired_mech */
+            1, /* overwrite_cred */
+            0, /* default_cred */
+            &mut kvs as gssapi_sys::gss_const_key_value_set_t, /* cred_store */
+            ptr::null_mut(), /* elements_stored */
+            ptr::null_mut(), /* cred_usage_stored */
+        );
         
         // FIXME: How to deallocate what's now pointed to by 'elements' ?
         // https://github.com/krb5/krb5/blob/master/src/tests/gssapi/t_credstore.c#L135
@@ -64,7 +67,7 @@ impl Credentials {
                 // FIXME: How to show some information in this case?
                 Err(Error::new(0, 0, OID::empty()))
             } else {
-                unsafe { Ok(CString::from_raw((*kvs.elements).value as *mut i8).into_bytes()) }
+                Ok(CString::from_raw((*kvs.elements).value as *mut i8).into_bytes())
             }
         } else {
             Err(Error::new(major_status, minor_status, OID::empty()))
@@ -88,6 +91,7 @@ impl Drop for Credentials {
     }
 }
 
+#[cfg(feature = "gssapi_ext")]
 pub struct CredentialsBuilder {
     desired_name: Name,
     time_req: u32,
@@ -96,7 +100,16 @@ pub struct CredentialsBuilder {
     impersonator: Option<Credentials>
 }
 
+#[cfg(not(feature = "gssapi_ext"))]
+pub struct CredentialsBuilder {
+    desired_name: Name,
+    time_req: u32,
+    desired_mechs: OIDSet,
+    cred_usage: isize,
+}
+
 impl CredentialsBuilder {
+    #[cfg(feature = "gssapi_ext")]
     pub fn new<T: Into<Name>>(desired_name: T) -> Self {
         CredentialsBuilder {
             desired_name: desired_name.into(),
@@ -107,16 +120,28 @@ impl CredentialsBuilder {
         }
     }
 
+    #[cfg(not(feature = "gssapi_ext"))]
+    pub fn new<T: Into<Name>>(desired_name: T) -> Self {
+        CredentialsBuilder {
+            desired_name: desired_name.into(),
+            time_req: 0,
+            desired_mechs: OIDSet::empty().unwrap(),
+            cred_usage: 0,
+        }
+    }
+
     pub fn time_req(mut self, time_req: u32) -> Self {
         self.time_req = time_req;
         self
     }
     
+    #[cfg(feature = "gssapi_ext")]
     pub fn impersonator(mut self, impersonator: Credentials) -> Self {
         self.impersonator = Some(impersonator);
         self
     }
 
+    #[cfg(feature = "gssapi_ext")]
     pub fn build(self) -> Result<Credentials> {
         let mut minor_status = 0;
         let mut output_cred_handle: gssapi_sys::gss_cred_id_t = ptr::null_mut();
@@ -149,6 +174,37 @@ impl CredentialsBuilder {
                     &mut time_rec,         /* time_rec */
                 )
             },
+        };
+        
+        if major_status == gssapi_sys::GSS_S_COMPLETE {
+            Ok(Credentials {
+                cred_handle: output_cred_handle,
+                mechs: actual_mechs,
+                time_rec: time_rec,
+            })
+        } else {
+            Err(Error::new(major_status, minor_status, OID::empty()))
+        }
+    }
+
+    #[cfg(not(feature = "gssapi_ext"))]
+    pub fn build(self) -> Result<Credentials> {
+        let mut minor_status = 0;
+        let mut output_cred_handle: gssapi_sys::gss_cred_id_t = ptr::null_mut();
+        let actual_mechs = try!(OIDSet::empty());
+        let mut time_rec = 0;
+        
+        let major_status = unsafe {
+            gssapi_sys::gss_acquire_cred(
+                &mut minor_status,
+                self.desired_name.get_handle(),
+                self.time_req,
+                self.desired_mechs.get_handle(),
+                self.cred_usage as gssapi_sys::gss_cred_usage_t,
+                &mut output_cred_handle,
+                &mut actual_mechs.get_handle(),
+                &mut time_rec,
+            )
         };
         
         if major_status == gssapi_sys::GSS_S_COMPLETE {

@@ -9,9 +9,13 @@
 extern { }
 
 mod defines;
+pub use defines::*;
+
 mod gssapi_h;
+pub use gssapi_h::*;
+
+#[cfg(feature = "gssapi_ext")]
 mod gssapi_ext_h;
 
-pub use defines::*;
-pub use gssapi_h::*;
+#[cfg(feature = "gssapi_ext")]
 pub use gssapi_ext_h::*;

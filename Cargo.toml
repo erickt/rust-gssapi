@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["Erick Tryzelaar <erick.tryzelaar@gmail.com>"]
 
 [features]
+gssapi_ext = ["gssapi-sys/gssapi_ext"]
 unstable-testing = ["clippy"]
 
 [dependencies]
