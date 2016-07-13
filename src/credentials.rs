@@ -5,7 +5,7 @@ use oid::OID;
 use oid_set::OIDSet;
 use std::ptr;
 
-#[cfg(feature = "gssapi_ext")]
+#[cfg(feature = "services4user")]
 use std::ffi::CString;
 
 #[derive(Debug)]
@@ -32,12 +32,12 @@ impl Credentials {
         self.cred_handle
     }
     
-    #[cfg(feature = "gssapi_ext")]
+    #[cfg(feature = "services4user")]
     pub fn impersonate<T: Into<Name>>(self, desired_name: T) -> CredentialsBuilder {
         CredentialsBuilder::new(desired_name).impersonator(self)
     }
     
-    #[cfg(feature = "gssapi_ext")]
+    #[cfg(feature = "services4user")]
     pub unsafe fn bytes(self) -> Result<Vec<u8>> {
         let mut kvs = gssapi_sys::gss_key_value_set_struct{
             count: 0,
@@ -91,7 +91,7 @@ impl Drop for Credentials {
     }
 }
 
-#[cfg(feature = "gssapi_ext")]
+#[cfg(feature = "services4user")]
 pub struct CredentialsBuilder {
     desired_name: Name,
     time_req: u32,
@@ -100,7 +100,7 @@ pub struct CredentialsBuilder {
     impersonator: Option<Credentials>
 }
 
-#[cfg(not(feature = "gssapi_ext"))]
+#[cfg(not(feature = "services4user"))]
 pub struct CredentialsBuilder {
     desired_name: Name,
     time_req: u32,
@@ -109,7 +109,7 @@ pub struct CredentialsBuilder {
 }
 
 impl CredentialsBuilder {
-    #[cfg(feature = "gssapi_ext")]
+    #[cfg(feature = "services4user")]
     pub fn new<T: Into<Name>>(desired_name: T) -> Self {
         CredentialsBuilder {
             desired_name: desired_name.into(),
@@ -120,7 +120,7 @@ impl CredentialsBuilder {
         }
     }
 
-    #[cfg(not(feature = "gssapi_ext"))]
+    #[cfg(not(feature = "services4user"))]
     pub fn new<T: Into<Name>>(desired_name: T) -> Self {
         CredentialsBuilder {
             desired_name: desired_name.into(),
@@ -135,13 +135,13 @@ impl CredentialsBuilder {
         self
     }
     
-    #[cfg(feature = "gssapi_ext")]
+    #[cfg(feature = "services4user")]
     pub fn impersonator(mut self, impersonator: Credentials) -> Self {
         self.impersonator = Some(impersonator);
         self
     }
 
-    #[cfg(feature = "gssapi_ext")]
+    #[cfg(feature = "services4user")]
     pub fn build(self) -> Result<Credentials> {
         let mut minor_status = 0;
         let mut output_cred_handle: gssapi_sys::gss_cred_id_t = ptr::null_mut();
@@ -187,7 +187,7 @@ impl CredentialsBuilder {
         }
     }
 
-    #[cfg(not(feature = "gssapi_ext"))]
+    #[cfg(not(feature = "services4user"))]
     pub fn build(self) -> Result<Credentials> {
         let mut minor_status = 0;
         let mut output_cred_handle: gssapi_sys::gss_cred_id_t = ptr::null_mut();
