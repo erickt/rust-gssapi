@@ -4,9 +4,11 @@ use name::Name;
 use oid::OID;
 use oid_set::OIDSet;
 use std::ptr;
+use std::slice;
+use libc;
 
 #[cfg(feature = "services4user")]
-use std::ffi::CString;
+use std::ffi::CStr;
 
 #[derive(Debug)]
 pub struct Credentials {
@@ -50,6 +52,7 @@ impl Credentials {
         };
         let mut elements_stored = ptr::null_mut();
         let mut cred_usage_stored = 0;
+        let mut minor_status = 0;
 
         // Example usage: https://github.com/krb5/krb5/blob/master/src/tests/gssapi/t_credstore.c#L77
         let major_status = gssapi_sys::gss_store_cred_into(
@@ -63,16 +66,20 @@ impl Credentials {
             &mut elements_stored,
             &mut cred_usage_stored
         );
-        
-        // FIXME: How to deallocate what's now pointed to by 'elements' ?
-        // https://github.com/krb5/krb5/blob/master/src/tests/gssapi/t_credstore.c#L135
-        
+                
         if major_status == gssapi_sys::GSS_S_COMPLETE {
+            // Get Rust to free the key-value store's elements when this function returns.
+            // Trying to follow https://github.com/krb5/krb5/blob/master/src/tests/gssapi/t_credstore.c#L135 .
+            libc::free(cred_store.elements as *mut libc::c_void);
             if cred_store.count != 1 {
                 // FIXME: How to show some information in this case?
                 Err(Error::new(0, 0, OID::empty()))
             } else {
-                Ok(CString::from_raw((*cred_store.elements).value as *mut i8).into_bytes())
+                // Wrap the key and value from the credential store without taking ownership.
+                // Not taking ownership follows https://github.com/krb5/krb5/blob/master/src/tests/gssapi/t_credstore.c#L135 .
+                // let key = CStr::from_ptr((*cred_store.elements).key);
+                let val = CStr::from_ptr((*cred_store.elements).value);
+                Ok(val.to_bytes_with_nul().to_vec())
             }
         } else {
             Err(Error::new(major_status, minor_status, OID::empty()))

@@ -10,6 +10,7 @@ unstable-testing = ["clippy"]
 [dependencies]
 gssapi-sys = { version = "*", path = "gssapi-sys" }
 clippy = { version = "^0.*", optional = true }
+libc = "0.2"
 
 [dev-dependencies]
 resolve = "^0.1.2"
