@@ -34,7 +34,7 @@ impl Name {
     }
 
     /// Temporarily get wrapped value.
-    pub unsafe fn get_handle<'a>(&self) -> gssapi_sys::gss_name_t {
+    pub unsafe fn get_handle(&self) -> gssapi_sys::gss_name_t {
         self.name
     }
 

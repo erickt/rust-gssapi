@@ -109,6 +109,12 @@ impl Buffer {
     }
 }
 
+impl Default for Buffer {
+    fn default() -> Self {
+        Buffer::new()
+    }
+}
+
 impl Drop for Buffer {
     fn drop(&mut self) {
         match self.kind {
