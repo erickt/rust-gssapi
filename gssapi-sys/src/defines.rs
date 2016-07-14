@@ -31,9 +31,6 @@ extern "C" {
     #[link_name = "GSS_C_DELEG_POLICY_FLAG_SHIM"]
     pub static GSS_C_DELEG_POLICY_FLAG: OM_uint32;
 
-    #[link_name = "GSS_C_NO_UI_FLAG_SHIM"]
-    pub static GSS_C_NO_UI_FLAG: OM_uint32;
-
     /// Status code types for gss_display_status.
     #[link_name = "GSS_C_GSS_CODE_SHIM"]
     pub static GSS_C_GSS_CODE: ::std::os::raw::c_int;
