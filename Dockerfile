@@ -26,3 +26,9 @@ RUN \
 		krb5-user \
 		libkrb5-dev \
 		pkg-config
+
+COPY . /rust-gssapi
+WORKDIR /rust-gssapi
+
+# TODO: Need to run KDC, maybe set env vars to point to it?
+CMD cargo test
