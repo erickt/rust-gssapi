@@ -1,0 +1,13 @@
+[package]
+name = "k5test"
+version = "0.1.0"
+authors = ["Erick Tryzelaar <erick.tryzelaar@gmail.com>"]
+
+[features]
+unstable-testing = ["clippy"]
+
+[dependencies]
+clippy = { version = "^0.*", optional = true }
+quale = "^1.0.0"
+resolve = "^0.1.2"
+tempdir = "^0.3"
