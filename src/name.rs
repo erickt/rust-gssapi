@@ -1,8 +1,8 @@
 use gssapi_sys;
 use std::ptr;
+use super::buffer::BufferRef;
 use super::error::{Error, Result};
 use super::oid::OID;
-use super::buffer::Buffer;
 
 #[derive(Debug)]
 pub struct Name {
@@ -11,7 +11,7 @@ pub struct Name {
 }
 
 impl Name {
-    pub fn new<T: Into<Buffer>>(name: T, name_type: OID) -> Result<Self> {
+    pub fn new<'a, T: Into<BufferRef<'a>>>(name: T, name_type: OID) -> Result<Self> {
         let mut name = name.into();
         let mut minor_status = 0;
         let mut gss_name = ptr::null_mut();

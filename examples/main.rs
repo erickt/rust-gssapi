@@ -15,7 +15,7 @@ fn main() {
     let fqdn = resolve::hostname::get_hostname().expect("failed to resolve hostname");
 
     let server_name = Name::new(
-        format!("http@{}", fqdn),
+        &format!("http@{}", fqdn),
         OID::nt_hostbased_service(),
     ).expect("failed to create server name");
 

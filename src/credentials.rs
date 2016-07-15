@@ -47,12 +47,14 @@ impl Credentials {
         let mut cred_usage_stored = 0;
         let mut minor_status = 0;
         
-        let mut elements: Vec<(gssapi_sys::gss_key_value_element_desc)> = cred_store.into_iter()
-                                                                .map(|&(ref e1, ref e2)| gssapi_sys::gss_key_value_element_struct {
-                                                                    key: e1.as_ptr(),
-                                                                    value: e2.as_ptr(),
-                                                                })
-                                                                .collect();
+        let mut elements = cred_store.into_iter()
+            .map(|&(ref e1, ref e2)| {
+                gssapi_sys::gss_key_value_element_struct {
+                    key: e1.as_ptr(),
+                    value: e2.as_ptr(),
+                }
+            })
+            .collect();
         
         let mut gss_cred_store = gssapi_sys::gss_key_value_set_struct {
             count: cred_store.len() as u32,
@@ -121,7 +123,7 @@ impl CredentialsBuilder {
         CredentialsBuilder {
             desired_name: desired_name.into(),
             time_req: 0,
-            desired_mechs: OIDSet::empty().unwrap(),
+            desired_mechs: OIDSet::c_no_oid_set(),
             cred_usage: 0,
             impersonator: None
         }
@@ -145,6 +147,11 @@ impl CredentialsBuilder {
     #[cfg(feature = "services4user")]
     pub fn impersonator(mut self, impersonator: Credentials) -> Self {
         self.impersonator = Some(impersonator);
+        self
+    }
+    
+    pub fn desired_mechs(mut self, desired_mechs: OIDSet) -> Self {
+        self.desired_mechs = desired_mechs;
         self
     }
 
@@ -197,7 +204,7 @@ impl CredentialsBuilder {
     #[cfg(not(feature = "services4user"))]
     pub fn build(self) -> Result<Credentials> {
         let mut minor_status = 0;
-        let mut output_cred_handle: gssapi_sys::gss_cred_id_t = ptr::null_mut();
+        let mut output_cred_handle = ptr::null_mut();
         let actual_mechs = try!(OIDSet::empty());
         let mut time_rec = 0;
         
