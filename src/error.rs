@@ -43,7 +43,7 @@ impl fmt::Display for Error {
             }
             first = false;
 
-            try!(write!(f, "{}", str::from_utf8(status.as_bytes()).unwrap()));
+            try!(write!(f, "{}", str::from_utf8(&status).unwrap()));
         }
 
         for status in DisplayStatus::new(self.minor_status,
@@ -54,7 +54,7 @@ impl fmt::Display for Error {
             }
             first = false;
 
-            try!(write!(f, "{}", str::from_utf8(status.as_bytes()).unwrap()));
+            try!(write!(f, "{}", str::from_utf8(&status).unwrap()));
         }
 
         Ok(())
