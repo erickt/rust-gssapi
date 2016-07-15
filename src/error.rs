@@ -67,7 +67,7 @@ impl fmt::Debug for Error {
     }
 }
 
-pub struct DisplayStatus<'a> {
+struct DisplayStatus<'a> {
     code: u32,
     status_type: i32,
     mech_type: &'a OID,
