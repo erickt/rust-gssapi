@@ -1,4 +1,6 @@
 use super::OM_uint32;
+use super::gss_OID;
+use super::gss_OID_set;
 
 extern "C" {
     #[link_name = "GSS_C_DELEG_FLAG_SHIM"]
@@ -59,4 +61,10 @@ extern "C" {
 
     #[link_name = "GSS_S_GAP_TOKEN_SHIM"]
     pub static GSS_S_GAP_TOKEN: OM_uint32;
+    
+    #[link_name = "GSS_C_NO_OID_SET_SHIM"]
+    pub static GSS_C_NO_OID_SET: gss_OID_set;
+    
+    #[link_name = "GSS_C_NO_OID"]
+    pub static GSS_C_NO_OID: gss_OID;
 }

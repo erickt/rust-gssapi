@@ -34,7 +34,7 @@ fn illegal_operation() -> gssapi::Error {
 
 fn acquire_creds(name: gssapi::Name) -> gssapi::Credentials {
     gssapi::Credentials::accept(name)
-        .desired_mechs(gssapi::OIDSet::mech_set_krb5())
+        .desired_mechs(gssapi::OIDSet::c_no_oid_set())
         .build()
         .expect("Failed to acquire credentials")
 }

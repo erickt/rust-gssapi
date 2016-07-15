@@ -18,6 +18,13 @@ impl OID {
     //     }
     // }
     
+    pub fn c_no_oid() -> Self {
+        OID {
+            oid : gssapi_sys::GSS_C_NO_OID,
+            owned: false,
+        }
+    }
+    
     pub fn nt_user_name() -> Self {
         OID {
             oid : gssapi_sys::GSS_C_NT_USER_NAME,

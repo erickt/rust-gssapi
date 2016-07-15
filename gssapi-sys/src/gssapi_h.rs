@@ -100,7 +100,6 @@ extern "C" {
     pub static GSS_C_MA_PFS: gss_const_OID;
     pub static GSS_C_MA_COMPRESS: gss_const_OID;
     pub static GSS_C_MA_CTX_TRANS: gss_const_OID;
-    pub static GSS_C_NO_OID_SET: gss_OID_set;
 }
 extern "C" {
     pub fn gss_acquire_cred(minor_status: *mut OM_uint32,
