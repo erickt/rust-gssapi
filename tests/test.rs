@@ -16,8 +16,7 @@ fn create_k5realm() -> k5test::K5Realm {
 
 fn import_name(username: &str, realm: &k5test::K5Realm) -> gssapi::Name {
     let user_principal = format!("{}@{}", username, realm.realm());
-
-    gssapi::Name::new(&user_principal, gssapi::OID::nt_user_name()).expect("Failed to import name")
+    gssapi::Name::new(&user_principal, gssapi::OID::nt_krb5_principal_name()).expect("Failed to import name")
 }
 
 fn duplicate_name(name: &gssapi::Name) -> gssapi::Name {
@@ -34,7 +33,10 @@ fn illegal_operation() -> gssapi::Error {
 }
 
 fn acquire_creds(name: gssapi::Name) -> gssapi::Credentials {
-    gssapi::Credentials::accept(name).build().expect("Failed to acquire credentials")
+    gssapi::Credentials::accept(name)
+        .desired_mechs(gssapi::OIDSet::mech_set_krb5())
+        .build()
+        .expect("Failed to acquire credentials")
 }
 
 #[test]
