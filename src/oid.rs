@@ -33,6 +33,10 @@ impl OID {
             owned: false,
         }
     }
+    
+    pub fn nt_krb5_principal_name() -> Self {
+        unsafe { OID::new(gssapi_sys::GSS_KRB5_NT_PRINCIPAL_NAME) }
+    }
 
     pub unsafe fn get_handle(&self) -> gssapi_sys::gss_OID {
         self.oid
