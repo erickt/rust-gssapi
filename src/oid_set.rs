@@ -27,6 +27,10 @@ impl OIDSet {
             Err(Error::new(major_status, minor_status, OID::empty()))
         }
     }
+    
+    pub fn c_no_oid_set() -> Self {
+        OIDSet { oid_set: ptr::null_mut() }
+    }
 
     /// Temporarily get wrapped value.
     pub unsafe fn get_handle(&self) -> gssapi_sys::gss_OID_set {

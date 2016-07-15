@@ -121,7 +121,7 @@ impl CredentialsBuilder {
         CredentialsBuilder {
             desired_name: desired_name.into(),
             time_req: 0,
-            desired_mechs: OIDSet::empty().unwrap(),
+            desired_mechs: OIDSet::c_no_oid_set(),
             cred_usage: 0,
             impersonator: None
         }
@@ -145,6 +145,11 @@ impl CredentialsBuilder {
     #[cfg(feature = "services4user")]
     pub fn impersonator(mut self, impersonator: Credentials) -> Self {
         self.impersonator = Some(impersonator);
+        self
+    }
+    
+    pub fn desired_mechs(mut self, desired_mechs: OIDSet) -> Self {
+        self.desired_mechs = desired_mechs;
         self
     }
 

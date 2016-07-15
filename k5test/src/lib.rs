@@ -10,6 +10,7 @@ use std::fs::File;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::process::Output;
 
 pub struct K5RealmBuilder {
     realm: String,
@@ -29,7 +30,7 @@ impl K5RealmBuilder {
             kadmin_local: None,
         }
     }
-
+    
     pub fn kdb5_util(mut self, path: PathBuf) -> Self {
         self.kdb5_util = Some(path);
         self
@@ -206,8 +207,12 @@ impl K5Realm {
             }
         }
     }
+    
+    pub fn realm(&self) -> String {
+        self._realm.clone()
+    }
 
-    fn run_command<F>(&self, command: &Path, f: F) -> io::Result<()>
+    fn run_command<F>(&self, command: &Path, f: F) -> io::Result<Output>
         where F: FnOnce(&mut Command) -> &mut Command
     {
         let mut command = Command::new(command);
@@ -217,30 +222,30 @@ impl K5Realm {
         }
 
         f(&mut command);
-
-        if try!(command.status()).success() {
-            Ok(())
-        } else {
-            Err(io::Error::new(io::ErrorKind::Other, "command failed".to_string()))
-        }
+        command.output()
     }
 
     fn create_kdb(&self) -> io::Result<()> {
-        self.run_command(&self.kdb5_util, |command| {
+        let output = try!(self.run_command(&self.kdb5_util, |command| {
             command
                 .arg("create")
                 .arg("-W")
                 .arg("-s")
                 .arg("-P")
                 .arg("master")
-        })
+        }));
+        println!("kdb status: {}", output.status);
+        println!("kdb stdout: {}", String::from_utf8_lossy(&output.stdout));
+        println!("kdb stderr: {}", String::from_utf8_lossy(&output.stderr));
+        Ok(())
     }
 
     fn run_kadminl(&self, query: &str) -> io::Result<()> {
-        self.run_command(&self.kadmin_local, |command| {
+        try!(self.run_command(&self.kadmin_local, |command| {
             command
                 .arg("-q")
                 .arg(query)
-        })
+        }));
+        Ok(())
     }
 }
