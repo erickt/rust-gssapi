@@ -40,6 +40,8 @@ impl OIDSet {
 
 impl Drop for OIDSet {
     fn drop(&mut self) {
+        println!("dropping oidset");
+        /*
         let mut minor_status = 0;
         let major_status = unsafe {
             gssapi_sys::gss_release_oid_set(
@@ -51,5 +53,8 @@ impl Drop for OIDSet {
             let err = Error::new(major_status, minor_status, OID::empty());
             panic!("{}", err);
         }
+        */
+
+        println!("oidset drop");
     }
 }

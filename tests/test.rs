@@ -14,34 +14,50 @@ fn create_k5realm() -> k5test::K5Realm {
         .expect("failed to create realm")
 }
 
-fn import_name(username: &str, realm: &k5test::K5Realm) -> gssapi::Name {
-    let user_principal = format!("{}@{}", username, realm.realm());
-    gssapi::Name::new(user_principal, gssapi::OID::nt_user_name()).expect("Failed to import name")
+fn import_name(username: &str) -> gssapi::Name { //, realm: &k5test::K5Realm) -> gssapi::Name {
+    //let user_principal = format!("{}@{}", username, realm.realm());
+    let user_principal = format!("{}@KRBTEST.COM", username);
+
+    gssapi::Name::new(
+        user_principal,
+        gssapi::OID::nt_user_name()
+    ).expect("Failed to import name")
 }
 
 fn duplicate_name(name: &gssapi::Name) -> gssapi::Name {
-    name.clone().duplicate().expect("Failed to duplicate name")
+    name.clone()
+        .duplicate()
+        .expect("Failed to duplicate name")
 }
 
 fn create_oid_set() -> gssapi::OIDSet {
-    gssapi::OIDSet::empty().expect("Failed to create empty OID set.")
+    gssapi::OIDSet::empty()
+        .expect("Failed to create empty OID set.")
 }
 
 fn illegal_operation(realm: &k5test::K5Realm) -> gssapi::Error {
     // TODO: Do a real illegal operation.
-    gssapi::Error::new(0,0,gssapi::OID::empty())
+    gssapi::Error::new(
+        0,
+        0,
+        gssapi::OID::empty())
 }
 
 fn acquire_creds(name: gssapi::Name) -> gssapi::Credentials {
-    gssapi::Credentials::accept(name).build().expect("Failed to acquire credentials")
+    println!("acquire_creds");
+    gssapi::Credentials::accept(name)
+        .build()
+        .expect("Failed to acquire credentials")
 }
 
 #[test]
 fn test() {
-    let realm = create_k5realm();
+    //let realm = create_k5realm();
     
     // Test name creation & duplication.
-    let username = import_name("user", &realm);
+    let username = import_name("user"); //, &realm);
+
+    /*
     let impersonatorname = import_name("impersonator", &realm);
     duplicate_name(&username);
     
@@ -52,8 +68,8 @@ fn test() {
     
     // Test errors.
     let err = illegal_operation(&realm);
+    */
     
     // Test credentials.
-    let cred = acquire_creds(username.clone());
-    
+    let cred = acquire_creds(username); //.clone());
 }

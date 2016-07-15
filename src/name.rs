@@ -53,13 +53,18 @@ impl Name {
                 name_type: self.name_type.clone(),
             })
         } else {
-            Err(Error::new(major_status, minor_status, self.name_type.clone()))
+            Err(Error::new(
+                major_status,
+                minor_status,
+                self.name_type.clone()))
         }
     }
 }
 
 impl Drop for Name {
     fn drop(&mut self) {
+        println!("freeing name");
+        /*
         let mut min_stat = 0;
         let maj_stat = unsafe {
             gssapi_sys::gss_release_name(&mut min_stat, &mut self.name)
@@ -68,6 +73,8 @@ impl Drop for Name {
         if maj_stat != gssapi_sys::GSS_S_COMPLETE {
             panic!("failed to release name!");
         }
+        */
+        println!("name is free");
     }
 }
 

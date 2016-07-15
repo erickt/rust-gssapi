@@ -47,12 +47,14 @@ impl Credentials {
         let mut cred_usage_stored = 0;
         let mut minor_status = 0;
         
-        let mut elements: Vec<(gssapi_sys::gss_key_value_element_desc)> = cred_store.into_iter()
-                                                                .map(|&(ref e1, ref e2)| gssapi_sys::gss_key_value_element_struct {
-                                                                    key: e1.as_ptr(),
-                                                                    value: e2.as_ptr(),
-                                                                })
-                                                                .collect();
+        let mut elements = cred_store.into_iter()
+            .map(|&(ref e1, ref e2)| {
+                gssapi_sys::gss_key_value_element_struct {
+                    key: e1.as_ptr(),
+                    value: e2.as_ptr(),
+                }
+            })
+            .collect();
         
         let mut gss_cred_store = gssapi_sys::gss_key_value_set_struct {
             count: cred_store.len() as u32,
@@ -84,6 +86,8 @@ impl Credentials {
 
 impl Drop for Credentials {
     fn drop(&mut self) {
+        println!("dropping credentials");
+        /*
         let mut minor_status = 0;
 
         let major_status = unsafe {
@@ -95,6 +99,8 @@ impl Drop for Credentials {
         if major_status != gssapi_sys::GSS_S_COMPLETE {
             panic!("{}", Error::new(major_status, minor_status, OID::empty()))
         }
+        */
+        println!("credentials drop");
     }
 }
 
@@ -155,6 +161,8 @@ impl CredentialsBuilder {
 
     #[cfg(feature = "services4user")]
     pub fn build(self) -> Result<Credentials> {
+        println!("Credentials::build");
+
         let mut minor_status = 0;
         let mut output_cred_handle: gssapi_sys::gss_cred_id_t = ptr::null_mut();
         let actual_mechs = try!(OIDSet::empty());
@@ -201,23 +209,29 @@ impl CredentialsBuilder {
 
     #[cfg(not(feature = "services4user"))]
     pub fn build(self) -> Result<Credentials> {
+        println!("Credentials::build");
+
         let mut minor_status = 0;
-        let mut output_cred_handle: gssapi_sys::gss_cred_id_t = ptr::null_mut();
+        let mut output_cred_handle = ptr::null_mut();
         let actual_mechs = try!(OIDSet::empty());
         let mut time_rec = 0;
+
+        println!("a");
         
         let major_status = unsafe {
             gssapi_sys::gss_acquire_cred(
                 &mut minor_status,
-                self.desired_name.get_handle(),
+                ptr::null_mut(), //self.desired_name.get_handle(),
                 self.time_req,
-                self.desired_mechs.get_handle(),
+                ptr::null_mut(), //self.desired_mechs.get_handle(),
                 self.cred_usage as gssapi_sys::gss_cred_usage_t,
                 &mut output_cred_handle,
                 &mut actual_mechs.get_handle(),
                 &mut time_rec,
             )
         };
+
+        println!("b");
         
         if major_status == gssapi_sys::GSS_S_COMPLETE {
             Ok(Credentials {
@@ -226,6 +240,8 @@ impl CredentialsBuilder {
                 time_rec: time_rec,
             })
         } else {
+            println!("c");
+
             Err(Error::new(major_status, minor_status, OID::empty()))
         }
     }
