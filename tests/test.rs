@@ -27,9 +27,9 @@ fn create_oid_set() -> gssapi::OIDSet {
     gssapi::OIDSet::empty().expect("Failed to create empty OID set.")
 }
 
-fn illegal_operation(realm: &k5test::K5Realm) -> gssapi::Error {
+fn illegal_operation() -> gssapi::Error {
     // TODO: Do a real illegal operation.
-    gssapi::Error::new(0,0,gssapi::OID::empty())
+    gssapi::Error::new(0, 0, gssapi::OID::empty())
 }
 
 fn acquire_creds(name: gssapi::Name) -> gssapi::Credentials {
@@ -41,9 +41,10 @@ fn test() {
     let realm = create_k5realm();
     
     // Test name creation & duplication.
-    let username = import_name("user", &realm);
-    let impersonatorname = import_name("impersonator", &realm);
-    duplicate_name(&username);
+    let user_name = import_name("user", &realm);
+
+    let _impersonator_name = import_name("impersonator", &realm);
+    duplicate_name(&user_name);
     
     // Test OID set creation.
     create_oid_set();
@@ -51,9 +52,8 @@ fn test() {
     // TODO: test buffer
     
     // Test errors.
-    let err = illegal_operation(&realm);
+    let _err = illegal_operation();
     
     // Test credentials.
-    let cred = acquire_creds(username.clone());
-    
+    let _cred = acquire_creds(user_name);
 }
