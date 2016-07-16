@@ -5,18 +5,17 @@ extern crate k5test;
 extern crate gssapi;
 extern crate gssapi_sys;
 
-fn create_k5realm() -> k5test::K5Realm {
-    let realm = "KRBTEST.COM".to_owned();
-    k5test::K5RealmBuilder::new(realm.clone())
-        .add_principal(format!("user@{}", realm), None)
-        .add_principal(format!("impersonator@{}", realm), None)
-        .build()
-        .expect("failed to create realm")
-}
+// fn create_k5realm() -> k5test::K5Realm {
+//     let realm = "KRBTEST.COM".to_owned();
+//     k5test::K5RealmBuilder::new(realm.clone())
+//         .add_principal(format!("user@{}", realm), None)
+//         .add_principal(format!("impersonator@{}", realm), None)
+//         .build()
+//         .expect("failed to create realm")
+// }
 
-fn import_name(username: &str, realm: &k5test::K5Realm) -> gssapi::Name {
-    let user_principal = format!("{}@{}", username, realm.realm());
-    gssapi::Name::new(&user_principal, gssapi::OID::nt_krb5_principal_name()).expect("Failed to import name")
+fn import_name(user_principal: &str) -> gssapi::Name {
+    gssapi::Name::new(user_principal, gssapi::OID::nt_krb5_principal_name()).expect("Failed to import name")
 }
 
 fn duplicate_name(name: &gssapi::Name) -> gssapi::Name {
@@ -41,12 +40,10 @@ fn acquire_creds(name: gssapi::Name) -> gssapi::Credentials {
 
 #[test]
 fn test() {
-    let realm = create_k5realm();
+    // let realm = create_k5realm();
     
     // Test name creation & duplication.
-    let user_name = import_name("user", &realm);
-
-    let _impersonator_name = import_name("impersonator", &realm);
+    let user_name = import_name("user@KRBTEST.COM");
     duplicate_name(&user_name);
     
     // Test OID set creation.

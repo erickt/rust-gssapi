@@ -25,10 +25,18 @@ RUN \
 		krb5-multidev \
 		krb5-user \
 		libkrb5-dev \
-		pkg-config
+		pkg-config \
+		python-pip
 
+RUN pip install k5test
+
+RUN mkdir -p /kerberos
 WORKDIR /rust-gssapi
 
-CMD cargo test
+CMD /rust-gssapi/tests/cmd.sh
+
+COPY tests/krb5.conf /etc/krb5.conf
+COPY tests/kdc.conf /etc/krb5kdc/kdc.conf
+
 
 COPY . /rust-gssapi
