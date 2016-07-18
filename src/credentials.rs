@@ -107,7 +107,7 @@ pub struct CredentialsBuilder {
     desired_name: Name,
     time_req: u32,
     desired_mechs: OIDSet,
-    cred_usage: isize,
+    cred_usage: i32,
     impersonator: Option<Credentials>
 }
 
@@ -116,7 +116,7 @@ pub struct CredentialsBuilder {
     desired_name: Name,
     time_req: u32,
     desired_mechs: OIDSet,
-    cred_usage: isize,
+    cred_usage: i32,
 }
 
 impl CredentialsBuilder {
