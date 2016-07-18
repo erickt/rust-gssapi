@@ -86,11 +86,11 @@ krb5kdc -P "$KERBEROS_DIR/kdc.pid" || (echo "Log file contents: " && cat /kerber
 echo "Starting kadmind."
 kadmind -P "$KERDEROS_DIR/kadmind.pid" -F "$KERBEROS_DIR/dump"
 
-echo "Adding the user to the local keytab for gssapi."
+echo "Daemons started, Adding the user to the local keytab for gssapi."
 kadmin.local -d /kerberos/db -q "ktadd -k /etc/krb5.keytab -norandkey $USER_PRINC"
 
-echo "Daemons started, kinit-ing user principal."
+echo "kinit-ing user principal."
 kinit -l 3600s -k -t /etc/krb5.keytab $USER_PRINC
 
 echo "Done setting up Kerberos, running Rust tests."
-cargo test
+cargo test --features "services4user"

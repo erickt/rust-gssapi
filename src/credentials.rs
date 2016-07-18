@@ -47,18 +47,20 @@ impl Credentials {
         let mut cred_usage_stored = 0;
         let mut minor_status = 0;
         
-        let mut elements = cred_store.into_iter()
+        let mut elements: Vec<gssapi_sys::gss_key_value_element_desc> = cred_store.into_iter()
             .map(|&(ref e1, ref e2)| {
                 gssapi_sys::gss_key_value_element_struct {
                     key: e1.as_ptr(),
                     value: e2.as_ptr(),
-                }
+                } as gssapi_sys::gss_key_value_element_desc
             })
             .collect();
         
+        let elements_ptr : *mut gssapi_sys::gss_key_value_element_desc = elements.as_mut_ptr();
+        
         let mut gss_cred_store = gssapi_sys::gss_key_value_set_struct {
             count: cred_store.len() as u32,
-            elements: elements.as_mut_ptr(),
+            elements: elements_ptr,
         };
 
         let major_status = unsafe {
