@@ -38,7 +38,7 @@ impl Credentials {
     }
     
     #[cfg(feature = "services4user")]
-    pub fn store_into(self, cred_store: &Vec<(CString, CString)>) -> Result<bool> {
+    pub fn store_into(&self, cred_store: &Vec<(CString, CString)>) -> Result<bool> {
         let input_usage = 0;
         let desired_mech = ptr::null_mut();
         let overwrite_cred = 1;
@@ -179,15 +179,15 @@ impl CredentialsBuilder {
             },
             Some(cred) => unsafe {
                 gssapi_sys::gss_acquire_cred_impersonate_name(
-                    &mut minor_status,        /* minor_status */
-                    cred.get_handle(),       /* impersonator_cred_handle */
-                    self.desired_name.get_handle(),     /* desired_name */
-                    self.time_req,               /* time_req */
-                    self.desired_mechs.get_handle(),          /* desired_mechs */
-                    self.cred_usage as gssapi_sys::gss_cred_usage_t,                /* cred_usage */
-                    &mut output_cred_handle,       /* output_cred_handle */
-                    &mut actual_mechs.get_handle(),      /* actual_mechs */
-                    &mut time_rec,         /* time_rec */
+                    &mut minor_status,
+                    cred.get_handle(),
+                    self.desired_name.get_handle(),
+                    self.time_req,
+                    self.desired_mechs.get_handle(),
+                    gssapi_sys::GSS_C_INITIATE,                /* Only initiate is supported by Kerberos */
+                    &mut output_cred_handle,
+                    &mut actual_mechs.get_handle(),
+                    &mut time_rec,
                 )
             },
         };

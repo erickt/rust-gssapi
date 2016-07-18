@@ -17,6 +17,7 @@ use std::ffi::CString;
 // }
 
 const USER_PRINC : &'static str = "user@KRBTEST.COM";
+const IMPERSONATEE_PRINC : &'static str = "impersonatee@KRBTEST.COM";
 
 fn import_name(user_principal: &str) -> gssapi::Name {
     gssapi::Name::new(user_principal, gssapi::OID::nt_krb5_principal_name()).expect("Failed to import name")
@@ -55,6 +56,13 @@ fn store_cred_into(user_principal: &str, cred: gssapi::Credentials) {
     std::path::Path::new(&ccache_path).metadata().expect("Did not create ccache file");
 }
 
+fn impersonate(impersonatee: gssapi::Name, cred: gssapi::Credentials) -> gssapi::Credentials {
+    cred.impersonate(impersonatee)
+        .desired_mechs(gssapi::OIDSet::c_no_oid_set())
+        .build()
+        .expect("Failed to impersonate")        
+}
+
 #[test]
 fn test() {
     // let realm = create_k5realm();
@@ -77,4 +85,7 @@ fn test() {
     // Test storing
     store_cred_into(USER_PRINC, cred);
     
+    // Test impersonation
+    let impersonated_cred = impersonate(import_name(IMPERSONATEE_PRINC), acquire_creds(import_name(USER_PRINC)));
+    store_cred_into(IMPERSONATEE_PRINC, impersonated_cred);
 }

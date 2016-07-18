@@ -1,6 +1,7 @@
 use super::OM_uint32;
 use super::gss_OID;
 use super::gss_OID_set;
+use super::gss_cred_usage_t;
 
 extern "C" {
     #[link_name = "GSS_C_DELEG_FLAG_SHIM"]
@@ -65,6 +66,16 @@ extern "C" {
     #[link_name = "GSS_C_NO_OID_SET_SHIM"]
     pub static GSS_C_NO_OID_SET: gss_OID_set;
     
-    #[link_name = "GSS_C_NO_OID"]
+    #[link_name = "GSS_C_NO_OID_SHIM"]
     pub static GSS_C_NO_OID: gss_OID;
+    
+    #[link_name = "GSS_C_INITIATE_SHIM"]
+    pub static GSS_C_INITIATE: gss_cred_usage_t;
+    
+    #[link_name = "GSS_C_ACCEPT_SHIM"]
+    pub static GSS_C_ACCEPT: gss_cred_usage_t;
+    
+    #[link_name = "GSS_C_BOTH_SHIM"]
+    pub static GSS_C_BOTH: gss_cred_usage_t;
+
 }
