@@ -8,16 +8,35 @@ pub struct OID {
     owned: bool,
 }
 
+
 impl OID {
-    pub unsafe fn new(oid: gssapi_sys::gss_OID) -> Self {
+    // Note, need to statically guarantee that the input is not builtin before exposing this.
+    // pub unsafe fn new(oid: gssapi_sys::gss_OID) -> Self {
+    //     OID {
+    //         oid: oid,
+    //         owned: true,
+    //     }
+    // }
+    
+    pub fn c_no_oid() -> Self {
         OID {
-            oid: oid,
-            owned: true,
+            oid : gssapi_sys::GSS_C_NO_OID,
+            owned: false,
+        }
+    }
+    
+    pub fn nt_user_name() -> Self {
+        OID {
+            oid : gssapi_sys::GSS_C_NT_USER_NAME,
+            owned: false,
         }
     }
 
-    pub fn empty() -> Self {
-        unsafe { OID::new(ptr::null_mut()) }
+    pub fn nt_krb5_principal_name() -> Self {
+        OID {
+            oid : gssapi_sys::GSS_KRB5_NT_PRINCIPAL_NAME,
+            owned: false,
+        }
     }
 
     pub fn nt_hostbased_service() -> Self {
@@ -27,10 +46,12 @@ impl OID {
         }
     }
     
-    pub fn nt_user_name() -> Self {
-        OID {
-            oid: gssapi_sys::GSS_C_NT_USER_NAME,
-            owned: false,
+    pub fn empty() -> Self {
+        unsafe { 
+            OID{
+                oid: ptr::null_mut(),
+                owned: true,
+            } 
         }
     }
 
@@ -52,7 +73,7 @@ impl Drop for OID {
             if major_status != gssapi_sys::GSS_S_COMPLETE {
                 let err = Error::new(major_status, minor_status, OID::empty());
                 panic!("{}", err);
-            }
+            }            
         }
     }
 }

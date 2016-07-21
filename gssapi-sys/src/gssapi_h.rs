@@ -19,7 +19,7 @@ impl ::std::default::Default for gss_OID_desc_struct {
     fn default() -> Self { unsafe { ::std::mem::zeroed() } }
 }
 pub type gss_OID_desc = gss_OID_desc_struct;
-pub type gss_OID = *mut gss_OID_desc_struct;
+pub type gss_OID = *const gss_OID_desc_struct;
 #[repr(C)]
 #[derive(Debug)]
 pub struct gss_OID_set_desc_struct {
@@ -30,7 +30,7 @@ impl ::std::default::Default for gss_OID_set_desc_struct {
     fn default() -> Self { unsafe { ::std::mem::zeroed() } }
 }
 pub type gss_OID_set_desc = gss_OID_set_desc_struct;
-pub type gss_OID_set = *mut gss_OID_set_desc_struct;
+pub type gss_OID_set = *const gss_OID_set_desc_struct;
 #[repr(C)]
 #[derive(Debug)]
 pub struct gss_buffer_desc_struct {
@@ -100,7 +100,6 @@ extern "C" {
     pub static GSS_C_MA_PFS: gss_const_OID;
     pub static GSS_C_MA_COMPRESS: gss_const_OID;
     pub static GSS_C_MA_CTX_TRANS: gss_const_OID;
-    pub static GSS_C_NO_OID_SET: gss_OID_set;
 }
 extern "C" {
     pub fn gss_acquire_cred(minor_status: *mut OM_uint32,

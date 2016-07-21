@@ -124,7 +124,7 @@ impl InitiateContextState {
         let claimant_cred_handle = ptr::null_mut(); // no credentials
         let time_req = 0;
         let input_chan_bindings = ptr::null_mut(); // no channel bindings
-        let mut actual_mech_type = ptr::null_mut(); // ignore mech type
+        let mut actual_mech_type = OID::empty(); // ignore mech type
         let mut output_token = Buffer::new();
         let mut ret_flags = 0;
         let mut time_rec = 0;
@@ -140,7 +140,7 @@ impl InitiateContextState {
                 time_req,
                 input_chan_bindings,
                 input_token.get_handle(),
-                &mut actual_mech_type,
+                &mut actual_mech_type.get_handle(),
                 output_token.get_handle(),
                 &mut ret_flags,
                 &mut time_rec,
@@ -151,7 +151,7 @@ impl InitiateContextState {
             panic!("cannot create context");
         }
 
-        let actual_mech_type = unsafe { OID::new(actual_mech_type) };
+        let actual_mech_type = OID::empty();
 
         if major_status == gssapi_sys::GSS_S_COMPLETE {
             Ok(InitiateContext::Done {
@@ -229,7 +229,7 @@ impl AcceptContextState {
         let mut minor_status = 0;
         let input_chan_bindings = ptr::null_mut(); // no channel bindings
         let mut src_name = ptr::null_mut();
-        let mut mech_type = ptr::null_mut(); // ignore mech type
+        let mut mech_type = OID::empty(); // ignore mech type
         let mut output_token = Buffer::new();
         let mut ret_flags = 0;
         let mut time_rec = 0;
@@ -243,7 +243,7 @@ impl AcceptContextState {
                 input_token.get_handle(),
                 input_chan_bindings,
                 &mut src_name,
-                &mut mech_type,
+                &mut mech_type.get_handle(),
                 output_token.get_handle(),
                 &mut ret_flags,
                 &mut time_rec,
@@ -255,7 +255,7 @@ impl AcceptContextState {
             panic!("cannot create context");
         }
 
-        let mech_type = unsafe { OID::new(mech_type) };
+        // let mech_type = unsafe { OID::new(mech_type) };
 
         if major_status == gssapi_sys::GSS_S_COMPLETE {
             Ok(AcceptContext::Done {

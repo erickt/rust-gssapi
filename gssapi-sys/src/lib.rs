@@ -14,6 +14,9 @@ pub use defines::*;
 mod gssapi_h;
 pub use gssapi_h::*;
 
+mod gssapi_krb5_h;
+pub use gssapi_krb5_h::*;
+
 #[cfg(feature = "services4user")]
 mod gssapi_ext_h;
 

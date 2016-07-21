@@ -5,19 +5,22 @@ extern crate k5test;
 extern crate gssapi;
 extern crate gssapi_sys;
 
-fn create_k5realm() -> k5test::K5Realm {
-    let realm = "KRBTEST.COM".to_owned();
-    k5test::K5RealmBuilder::new(realm.clone())
-        .add_principal(format!("user@{}", realm), None)
-        .add_principal(format!("impersonator@{}", realm), None)
-        .build()
-        .expect("failed to create realm")
-}
+use std::ffi::CString;
 
-fn import_name(username: &str, realm: &k5test::K5Realm) -> gssapi::Name {
-    let user_principal = format!("{}@{}", username, realm.realm());
+// fn create_k5realm() -> k5test::K5Realm {
+//     let realm = "KRBTEST.COM".to_owned();
+//     k5test::K5RealmBuilder::new(realm.clone())
+//         .add_principal(format!("user@{}", realm), None)
+//         .add_principal(format!("impersonator@{}", realm), None)
+//         .build()
+//         .expect("failed to create realm")
+// }
 
-    gssapi::Name::new(&user_principal, gssapi::OID::nt_user_name()).expect("Failed to import name")
+const USER_PRINC : &'static str = "user@KRBTEST.COM";
+const IMPERSONATEE_PRINC : &'static str = "impersonatee@KRBTEST.COM";
+
+fn import_name(user_principal: &str) -> gssapi::Name {
+    gssapi::Name::new(user_principal, gssapi::OID::nt_krb5_principal_name()).expect("Failed to import name")
 }
 
 fn duplicate_name(name: &gssapi::Name) -> gssapi::Name {
@@ -34,17 +37,38 @@ fn illegal_operation() -> gssapi::Error {
 }
 
 fn acquire_creds(name: gssapi::Name) -> gssapi::Credentials {
-    gssapi::Credentials::accept(name).build().expect("Failed to acquire credentials")
+    gssapi::Credentials::accept(name)
+        .desired_mechs(gssapi::OIDSet::c_no_oid_set())
+        .build()
+        .expect("Failed to acquire credentials")
+}
+
+fn store_cred_into(user_principal: &str, cred: gssapi::Credentials) {    
+    let ccache_path = format!("/tmp/{}_ccache", user_principal);
+    let CCACHE = CString::new(format!("FILE:{}", ccache_path)).unwrap();
+    // NOTE: Keytab does not exist.
+    // let KEYTAB = CString::new(format!("FILE:/tmp/{}_keytab", user_principal)).unwrap();
+    let store : Vec<(CString, CString)> = vec![
+        (CString::new("ccache").unwrap(), CCACHE),
+        // (CString::new("keytab").unwrap(), KEYTAB),
+    ];
+    cred.store_into(&store).expect("Failed to store credentials");
+    std::path::Path::new(&ccache_path).metadata().expect("Did not create ccache file");
+}
+
+fn impersonate(impersonatee: gssapi::Name, cred: gssapi::Credentials) -> gssapi::Credentials {
+    cred.impersonate(impersonatee)
+        .desired_mechs(gssapi::OIDSet::c_no_oid_set())
+        .build()
+        .expect("Failed to impersonate")        
 }
 
 #[test]
 fn test() {
-    let realm = create_k5realm();
+    // let realm = create_k5realm();
     
     // Test name creation & duplication.
-    let user_name = import_name("user", &realm);
-
-    let _impersonator_name = import_name("impersonator", &realm);
+    let user_name = import_name(USER_PRINC);
     duplicate_name(&user_name);
     
     // Test OID set creation.
@@ -56,5 +80,12 @@ fn test() {
     let _err = illegal_operation();
     
     // Test credentials.
-    let _cred = acquire_creds(user_name);
+    let cred = acquire_creds(user_name);
+    
+    // Test storing
+    store_cred_into(USER_PRINC, cred);
+    
+    // Test impersonation
+    let impersonated_cred = impersonate(import_name(IMPERSONATEE_PRINC), acquire_creds(import_name(USER_PRINC)));
+    store_cred_into(IMPERSONATEE_PRINC, impersonated_cred);
 }
